@@ -16,9 +16,6 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { styled } from "@mui/system";
-import axios from "axios";
-axios.defaults.headers.post["Content-Type"] = "application/json;charset=utf-8";
-axios.defaults.headers.post["Access-Control-Allow-Origin"] = "*";
 
 const MessageBubble = styled("div")({
   borderRadius: "15px",
@@ -121,6 +118,9 @@ const App: React.FC = () => {
   const [reply, setReply] = useState("");
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [conversations, setConversations] = useState<{
+    [key: number]: Array<{ sender: "me" | "them"; text: string }>;
+  }>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -131,9 +131,8 @@ const App: React.FC = () => {
   }, []);
 
   // 選択されたプロフィールを取得
-  const selectedProfile = likedProfiles.find(
-    (profile) => profile.id === selectedProfileId
-  );
+  const selectedProfile =
+    likedProfiles.find((profile) => profile.id === selectedProfileId) || null;
 
   //データをプロフィールデータをフェッチさせる処理
   async function fetchProfiles(count: number) {
@@ -148,6 +147,7 @@ const App: React.FC = () => {
   // カードをクリックしたときのイベントハンドラー
   const handleCardClick = (profileId: number) => {
     setSelectedProfileId(profileId);
+    setMessageText("");
     handleChat();
   };
 
@@ -265,24 +265,36 @@ const App: React.FC = () => {
   const [messageText, setMessageText] = useState("");
 
   const handleSendMessage = async () => {
-    if (messageText.trim() === "") return;
+    if (messageText.trim() === "" || selectedProfileId === null) return;
 
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      { sender: "me", text: messageText },
-    ]);
+    setConversations((prevConversations) => {
+      const prevMessages = prevConversations[selectedProfileId] || [];
+      return {
+        ...prevConversations,
+        [selectedProfileId]: [
+          ...prevMessages,
+          { sender: "me", text: messageText },
+        ],
+      };
+    });
 
     setMessageText("");
 
     const reply = await fetchReply(messageText);
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      { sender: "them", text: reply },
-    ]);
+    setConversations((prevConversations) => {
+      const prevMessages = prevConversations[selectedProfileId] || [];
+      return {
+        ...prevConversations,
+        [selectedProfileId]: [...prevMessages, { sender: "them", text: reply }],
+      };
+    });
   };
 
   const renderMessages = () => {
-    return messages.map((message, index) => (
+    if (selectedProfileId === null) return null;
+
+    const messagesToRender = conversations[selectedProfileId] || [];
+    return messagesToRender.map((message, index) => (
       <div
         key={index}
         style={{

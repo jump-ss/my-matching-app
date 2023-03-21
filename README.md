@@ -1,46 +1,61 @@
-# Getting Started with Create React App
+# Chat Matching App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+このアプリは、ユーザーがプロフィールカードをスワイプして「いいね」を付けることができるマッチングアプリです。ユーザーは「いいね」したプロフィールとチャットをすることができます。
 
-## Available Scripts
+## 機能
 
-In the project directory, you can run:
+- OpenAI によるプロフィール自動生成
+- プロフィールカードのスワイプ (いいね/スキップ)
+- いいねしたプロフィール一覧の表示
+- いいねしたプロフィールとのチャット機能 (対話相手は OpenAI)
 
-### `npm start`
+## 前提条件
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+- Node.js (推奨バージョン: v14.x 以上)
+- サーバー側の API (このチャットマッチングアプリは、API に依存しています。API が提供するエンドポイントに注意してください。)
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## セットアップ方法
 
-### `npm test`
+1. このリポジトリをクローンまたはダウンロードします。
+2. クローンしたディレクトリに移動し、以下のコマンドを実行して必要なパッケージをインストールします。
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```
+npm install
+```
 
-### `npm run build`
+3. プロジェクトのルートディレクトリに `.env` ファイルを作成し、必要な環境変数を設定します。
+   REACT_APP_OPENAI_API_KEY=OpenAI API の公式サイトから取得する
+4. サーバー側の API を起動します。
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```
+node server/index.js
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+5. プロジェクトのルートディレクトリで以下のコマンドを実行してアプリを起動します。
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```
+npm start
+```
 
-### `npm run eject`
+6. ブラウザで [http://localhost:3000](http://localhost:3000) にアクセスしてアプリを表示します。
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+## 使用技術
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- React
+- Material-UI
+- Express
+- OpenAI API
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+## ライセンス
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+このプロジェクトは、MIT ライセンスの下で公開されています。
 
-## Learn More
+## 今後の対応予定
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+- commponet をファイルごとに分離
+- プロフィールの強化（プロフィール画像の追加、日本語化、人格の付与）
+- 人格に応じてチャット相手のしゃべり言葉を変更する
+- バックエンドの Rails 化、および各種データの永続化（プロフィール、いいね履歴、チャット履歴）
+- ユーザー認証とプロフィール管理機能の実装
+- レスポンシブデザイン対応
+- よりリアルなプロフィールと対話の改善
