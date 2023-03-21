@@ -121,6 +121,7 @@ const App: React.FC = () => {
   const [conversations, setConversations] = useState<{
     [key: number]: Array<{ sender: "me" | "them"; text: string }>;
   }>({});
+  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -138,8 +139,12 @@ const App: React.FC = () => {
   async function fetchProfiles(count: number) {
     const generatedProfiles: Profile[] = [];
     for (let i = 0; i < count; i++) {
-      const profile: any = await generateProfile();
-      generatedProfiles.push(profile);
+      try {
+        const profile: any = await generateProfile();
+        generatedProfiles.push(profile);
+      } catch (e) {
+        console.log(e);
+      }
     }
     setProfiles((prevProfiles) => [...prevProfiles, ...generatedProfiles]);
   }
@@ -156,7 +161,7 @@ const App: React.FC = () => {
    */
   const filteredProfiles = profiles.filter(
     (profile) =>
-      !likedProfiles.some((likedProfile) => likedProfile.id === profile.id)
+      !likedProfiles.some((likedProfile) => likedProfile?.id === profile?.id)
   );
 
   /**
@@ -164,11 +169,12 @@ const App: React.FC = () => {
    * @param direction スワイプの方向（'like' または 'dislike'）
    */
   const handleSwipe = (direction: "like" | "dislike") => {
+    setIsButtonDisabled(true);
     setFade(false);
     setTimeout(() => {
+      fetchProfiles(1);
       if (direction === "like") {
         // いいねの処理
-        fetchProfiles(1);
         console.log("いいね:", filteredProfiles[currentProfileIndex].name);
         setLikedProfiles((prevProfiles) => [
           ...prevProfiles,
@@ -178,6 +184,10 @@ const App: React.FC = () => {
         // いいね以外の処理
         console.log("スキップ:", filteredProfiles[currentProfileIndex].name);
       }
+
+      setTimeout(() => {
+        setIsButtonDisabled(false);
+      }, 200);
 
       if (currentProfileIndex < profiles.length - 1) {
         setCurrentProfileIndex((prevIndex) => prevIndex + 1);
@@ -421,6 +431,7 @@ const App: React.FC = () => {
               color='secondary'
               fullWidth
               onClick={() => handleSwipe("dislike")}
+              disabled={isButtonDisabled}
             >
               スキップ
             </Button>
@@ -430,7 +441,10 @@ const App: React.FC = () => {
               variant='contained'
               color='primary'
               fullWidth
-              onClick={() => handleSwipe("like")}
+              onClick={() => {
+                handleSwipe("like");
+              }}
+              disabled={isButtonDisabled}
             >
               いいね
             </Button>
