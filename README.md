@@ -46,6 +46,35 @@ npm start
 - Express
 - OpenAI API
 
+## ディレクトリ構成
+
+```
+.
+|-- README.md
+|-- package-lock.json
+|-- package.json
+|-- public
+| |-- favicon.ico
+| |-- index.html
+| |-- logo192.png
+| |-- logo512.png
+| |-- manifest.json
+| `-- robots.txt
+|-- server
+|   `-- index.js
+|-- src
+| |-- App.css
+| |-- App.test.tsx
+| |-- App.tsx
+| |-- index.css
+| |-- index.tsx
+| |-- logo.svg
+| |-- react-app-env.d.ts
+| |-- reportWebVitals.ts
+| `-- setupTests.ts
+`-- tsconfig.json
+```
+
 ## ライセンス
 
 このプロジェクトは、MIT ライセンスの下で公開されています。
@@ -56,6 +85,7 @@ npm start
 - エンジニア特化したマッチングアプリにしたい
 - プロフィールの強化（プロフィール画像の追加、職業、スキル、趣味、日本語化、人格の付与）
 - 人格に応じてチャット相手が話すように変更する
+- 暴言やセクハラに近いコメントについてはマスキングして、「NG ワード」という言葉に変換して出力
 - チャット相手のブロック機能と FB
 - バックエンドの Rails 化、および各種データの永続化（プロフィール、いいね履歴、チャット履歴）
 - ユーザー認証とプロフィール管理機能の実装
