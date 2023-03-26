@@ -35,8 +35,9 @@ app.post("/generateProfile", async (req, res) => {
 
 app.post("/generateReply", async (req, res) => {
   const response = await openai.createCompletion({
-    // model: "gpt-3.5-turbo",
-    model: "text-davinci-003",
+    pathname: "/v1/chat/completions",
+    model: "gpt-3.5-turbo-0301",
+    //model: "text-davinci-003",
     prompt: req.body.messages,
     max_tokens: 200,
     n: 1,

@@ -18,6 +18,8 @@ import {
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { styled } from "@mui/system";
 
+import { useChat } from "../../hooks/useChat";
+
 type Profile = {
   id: number;
   name: string;
@@ -64,67 +66,21 @@ const theme = createTheme({
 });
 
 const Chat: React.FC<ChatProps> = (props: ChatProps) => {
-  const [conversations, setConversations] = useState<{
-    [key: number]: Array<{ sender: "me" | "them"; text: string }>;
-  }>({});
-
-  // OpenAI API呼び出し関数(リプライ用)
-  async function fetchReply(prompt: string) {
-    //const response = await fetch("http://localhost:5000/generateReply", {
-    const response = await fetch("http://localhost:5000/messages", {
-      mode: "cors",
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        //messages: prompt,
-        user_text: prompt,
-      }),
-    });
-
-    const responseText = await response.text();
-    return responseText;
-  }
-
-  /**
-   * チャットのロジック作成
-   */
   const [messages, setMessages] = useState<
     Array<{ sender: "me" | "them"; text: string }>
   >([]);
 
   const [messageText, setMessageText] = useState("");
 
+  // useChatフックを使用
+  const { conversations, handleSendMessage: handleSendMessageFromHook } =
+    useChat(props.selectedProfile, props.selectedProfileId);
+
+  // handleSendMessageの中身をフックから取得したものに変更
   const handleSendMessage = async () => {
-    if (messageText.trim() === "" || props.selectedProfileId === null) return;
-
-    setConversations((prevConversations) => {
-      const prevMessages = prevConversations[props.selectedProfileId] || [];
-      return {
-        ...prevConversations,
-        [props.selectedProfileId]: [
-          ...prevMessages,
-          { sender: "me", text: messageText },
-        ],
-      };
-    });
-
+    await handleSendMessageFromHook(messageText);
     setMessageText("");
-
-    const reply = await fetchReply(messageText);
-    setConversations((prevConversations) => {
-      const prevMessages = prevConversations[props.selectedProfileId] || [];
-      return {
-        ...prevConversations,
-        [props.selectedProfileId]: [
-          ...prevMessages,
-          { sender: "them", text: reply },
-        ],
-      };
-    });
   };
-
   const renderMessages = () => {
     if (props.selectedProfileId === null) return null;
 
