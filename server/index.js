@@ -19,7 +19,7 @@ app.use(express.json());
 
 app.post("/generateProfile", async (req, res) => {
   const prompt =
-    "Generate a random profile with id, name, age and bio in json format. End the text with double quotes.";
+    " input: Please reply in English for the Json key value and in Japanese for the value value response: Generate a random profile with id, name, age and bio in json format";
   const response = await openai.createCompletion({
     model: "text-davinci-003",
     prompt: prompt,
@@ -35,8 +35,9 @@ app.post("/generateProfile", async (req, res) => {
 
 app.post("/generateReply", async (req, res) => {
   const response = await openai.createCompletion({
-    // model: "gpt-3.5-turbo",
-    model: "text-davinci-003",
+    pathname: "/v1/chat/completions",
+    model: "gpt-3.5-turbo-0301",
+    //model: "text-davinci-003",
     prompt: req.body.messages,
     max_tokens: 200,
     n: 1,

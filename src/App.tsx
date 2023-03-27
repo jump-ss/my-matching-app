@@ -1,38 +1,14 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
-import {
-  Button,
-  TextField,
-  Container,
-  Typography,
-  Card,
-  CardContent,
-  Grid,
-  Fade,
-  Box,
-  CssBaseline,
-  Slide,
-  CardActions,
-} from "@mui/material";
+import { Container, Typography, Box, CssBaseline, Slide } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { styled } from "@mui/system";
 
-const MessageBubble = styled("div")({
-  borderRadius: "15px",
-  padding: "10px",
-  display: "inline-block",
-  background: "#f0f0f0",
-  maxWidth: "70%",
-  wordWrap: "break-word",
-});
+import { MainScreen } from "./MainScreen";
+import { Footer } from "./components/Footer";
+import { Chat } from "./components/Chat";
 
-const UserMessage = styled(MessageBubble)({
-  textAlign: "right",
-});
-
-const PartnerMessage = styled(MessageBubble)({
-  textAlign: "left",
-});
+import { useProfiles } from "./hooks";
+import { Profile } from "./types";
 
 const theme = createTheme({
   palette: {
@@ -57,51 +33,10 @@ const theme = createTheme({
   },
 });
 
-// OpenAI API呼び出し関数(リプライ用)
-async function fetchReply(prompt: string) {
-  const response = await fetch("http://localhost:5000/generateReply", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      messages: prompt,
-    }),
-  });
-
-  const responseText = await response.text();
-  return responseText;
-}
-
-// OpenAI API呼び出し関数(マッチチング相手作成用)
-export async function generateProfile() {
-  const response = await fetch("http://localhost:5000/generateProfile", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-  const responseText = await response.text();
-
-  // bioの最後のダブルクォートがない場合に追加する
-  const fixedResponseText = responseText.replace(/("bio":\s*"([^"]*))$/, '$1"');
-
-  try {
-    const profileData = JSON.parse(fixedResponseText);
-    return profileData;
-  } catch (error) {
-    console.error("Error parsing JSON:", error);
-  }
-}
-
-type Profile = {
-  id: number;
-  name: string;
-  age: number;
-  bio: string;
-};
-
 const App: React.FC = () => {
+  const [selectedProfileId, setSelectedProfileId] = useState<number | null>(
+    null
+  );
   const [currentProfileIndex, setCurrentProfileIndex] = useState(0);
   const [fade, setFade] = useState(true);
   const [likedProfiles, setLikedProfiles] = useState<Profile[]>([]);
@@ -109,50 +44,21 @@ const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<
     "search" | "likedProfiles"
   >("search");
-  const [selectedProfileId, setSelectedProfileId] = useState<number | null>(
-    null
-  );
+
   const [slideDirection, setSlideDirection] = useState<"left" | "right">(
     "left"
   );
-  const [reply, setReply] = useState("");
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [conversations, setConversations] = useState<{
-    [key: number]: Array<{ sender: "me" | "them"; text: string }>;
-  }>({});
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      await fetchProfiles(3);
-      setLoading(false);
-    };
-    fetchData();
-  }, []);
+  const { profiles, loading, fetchProfiles } = useProfiles();
 
   // 選択されたプロフィールを取得
   const selectedProfile =
     likedProfiles.find((profile) => profile.id === selectedProfileId) || null;
 
-  //データをプロフィールデータをフェッチさせる処理
-  async function fetchProfiles(count: number) {
-    const generatedProfiles: Profile[] = [];
-    for (let i = 0; i < count; i++) {
-      try {
-        const profile: any = await generateProfile();
-        generatedProfiles.push(profile);
-      } catch (e) {
-        console.log(e);
-      }
-    }
-    setProfiles((prevProfiles) => [...prevProfiles, ...generatedProfiles]);
-  }
-
   // カードをクリックしたときのイベントハンドラー
   const handleCardClick = (profileId: number) => {
     setSelectedProfileId(profileId);
-    setMessageText("");
     handleChat();
   };
 
@@ -164,6 +70,13 @@ const App: React.FC = () => {
       !likedProfiles.some((likedProfile) => likedProfile?.id === profile?.id)
   );
 
+  // App.tsx
+  useEffect(() => {
+    if (filteredProfiles.length === 1) {
+      fetchProfiles(3);
+    }
+  }, [filteredProfiles]);
+
   /**
    * 指定された方向（いいねまたはスキップ）でスワイプしたときの処理を実行します。
    * @param direction スワイプの方向（'like' または 'dislike'）
@@ -172,7 +85,7 @@ const App: React.FC = () => {
     setIsButtonDisabled(true);
     setFade(false);
     setTimeout(() => {
-      fetchProfiles(1);
+      fetchProfiles(3);
       if (direction === "like") {
         // いいねの処理
         console.log("いいね:", filteredProfiles[currentProfileIndex].name);
@@ -218,286 +131,19 @@ const App: React.FC = () => {
     setCurrentScreen(screen);
   };
 
-  /**
-   * フッター部をの表示する
-   */
-  const renderFooter = () => {
+  if (isChatting && selectedProfile && selectedProfileId) {
     return (
-      <Box
-        sx={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          width: "100%",
-          pb: 2,
+      <Chat
+        selectedProfile={selectedProfile}
+        selectedProfileId={selectedProfileId}
+        handleBackClick={() => {
+          setSlideDirection((prevDirection) =>
+            prevDirection === "left" ? "right" : "left"
+          );
+          setIsChatting(!isChatting);
         }}
-      >
-        <Grid container spacing={2}>
-          <Grid item xs={6}>
-            <Button
-              variant='contained'
-              color='secondary'
-              fullWidth
-              onClick={() => handleNavigation("search")}
-              sx={{ ml: 1, mr: 1 }} // ボタンの右側にマージンを追加
-            >
-              プロフィール検索
-            </Button>
-          </Grid>
-          <Grid item xs={6}>
-            <Button
-              variant='contained'
-              color='primary'
-              fullWidth
-              onClick={() => handleNavigation("likedProfiles")}
-              sx={{ ml: 1, mr: 1 }} // ボタンの左側にマージンを追加
-            >
-              一覧
-            </Button>
-          </Grid>
-        </Grid>
-      </Box>
+      />
     );
-  };
-
-  /**
-   * チャットのロジック作成
-   */
-  const [messages, setMessages] = useState<
-    Array<{ sender: "me" | "them"; text: string }>
-  >([]);
-
-  const [messageText, setMessageText] = useState("");
-
-  const handleSendMessage = async () => {
-    if (messageText.trim() === "" || selectedProfileId === null) return;
-
-    setConversations((prevConversations) => {
-      const prevMessages = prevConversations[selectedProfileId] || [];
-      return {
-        ...prevConversations,
-        [selectedProfileId]: [
-          ...prevMessages,
-          { sender: "me", text: messageText },
-        ],
-      };
-    });
-
-    setMessageText("");
-
-    const reply = await fetchReply(messageText);
-    setConversations((prevConversations) => {
-      const prevMessages = prevConversations[selectedProfileId] || [];
-      return {
-        ...prevConversations,
-        [selectedProfileId]: [...prevMessages, { sender: "them", text: reply }],
-      };
-    });
-  };
-
-  const renderMessages = () => {
-    if (selectedProfileId === null) return null;
-
-    const messagesToRender = conversations[selectedProfileId] || [];
-    return messagesToRender.map((message, index) => (
-      <div
-        key={index}
-        style={{
-          display: "flex",
-          justifyContent: message.sender === "me" ? "flex-end" : "flex-start",
-          marginBottom: 8,
-        }}
-      >
-        <div
-          style={{
-            background: message.sender === "me" ? "#1976d2" : "#f3f3f3",
-            color: message.sender === "me" ? "white" : "black",
-            borderRadius: 5,
-            padding: 8,
-            maxWidth: "60%",
-            wordWrap: "break-word",
-          }}
-        >
-          {message.text}
-        </div>
-      </div>
-    ));
-  };
-
-  /**
-   * チャット部を表示する
-   */
-  const renderChat = () => {
-    if (!selectedProfile) return null;
-
-    return (
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Box minHeight='100vh'>
-          <Container maxWidth='sm'>
-            {selectedProfile && (
-              <>
-                <Typography
-                  variant='h4'
-                  align='center'
-                  style={{ marginTop: 20, marginBottom: 40 }}
-                >
-                  {selectedProfile?.name} とのチャット
-                </Typography>
-                <Card key={selectedProfile.id} style={{ marginBottom: 20 }}>
-                  <CardContent>
-                    <Grid
-                      container
-                      alignItems='center'
-                      style={{ marginBottom: 20 }}
-                    >
-                      <Grid item xs={6}>
-                        <Typography align='left'>
-                          {selectedProfile?.name} のアイコン
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Typography align='right'>あなたのアイコン</Typography>
-                      </Grid>
-                    </Grid>
-                    {renderMessages()}
-                  </CardContent>
-                  <CardActions>
-                    <TextField
-                      fullWidth
-                      value={messageText}
-                      onChange={(e) => setMessageText(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === "Enter") {
-                          handleSendMessage();
-                        }
-                      }}
-                    />
-                    <Button
-                      onClick={handleSendMessage}
-                      disabled={messages.length % 2 === 1}
-                      color='primary'
-                    >
-                      送信
-                    </Button>
-                  </CardActions>
-                </Card>
-              </>
-            )}
-            <Button
-              variant='contained'
-              color='secondary'
-              fullWidth
-              onClick={handleChat}
-            >
-              プロフィールに戻る
-            </Button>
-          </Container>
-        </Box>
-      </ThemeProvider>
-    );
-  };
-
-  const renderSearchScreen = () => {
-    return (
-      <>
-        <Typography
-          variant='h4'
-          align='center'
-          style={{ marginTop: 20, marginBottom: 40 }}
-        >
-          マッチングアプリ
-        </Typography>
-        <Fade in={fade}>
-          <Card>
-            <CardContent>
-              <Typography variant='h6'>
-                {profiles[currentProfileIndex]?.name}
-              </Typography>
-              <Typography>{profiles[currentProfileIndex]?.age}歳</Typography>
-              <Typography>{profiles[currentProfileIndex]?.bio}</Typography>
-            </CardContent>
-          </Card>
-        </Fade>
-        <Grid container spacing={2} style={{ marginTop: 20 }}>
-          <Grid item xs={6}>
-            <Button
-              variant='contained'
-              color='secondary'
-              fullWidth
-              onClick={() => handleSwipe("dislike")}
-              disabled={isButtonDisabled}
-            >
-              スキップ
-            </Button>
-          </Grid>
-          <Grid item xs={6}>
-            <Button
-              variant='contained'
-              color='primary'
-              fullWidth
-              onClick={() => {
-                handleSwipe("like");
-              }}
-              disabled={isButtonDisabled}
-            >
-              いいね
-            </Button>
-          </Grid>
-        </Grid>
-      </>
-    );
-  };
-
-  const renderLikedProfilesScreen = () => {
-    return (
-      <>
-        <Typography
-          variant='h4'
-          align='center'
-          style={{ marginTop: 20, marginBottom: 40 }}
-        >
-          いいねしたプロフィール一覧
-        </Typography>
-        {likedProfiles.map((profile) => (
-          <Card
-            key={profile.id}
-            style={{ marginBottom: 20 }}
-            onClick={() => handleCardClick(profile.id)}
-          >
-            <CardContent>
-              <Typography variant='h6'>{profile.name}</Typography>
-              <Typography>{profile.age}歳</Typography>
-              <Typography>{profile.bio}</Typography>
-            </CardContent>
-          </Card>
-        ))}
-      </>
-    );
-  };
-
-  /**
-   *現在の画面に応じたコンテンツをレンダリングします。
-   */
-  const renderScreen = () => {
-    if (loading) {
-      return <Typography align='center'>ローディング中...</Typography>;
-    }
-
-    if (currentScreen === "likedProfiles") {
-      return renderLikedProfilesScreen();
-    } else {
-      return renderSearchScreen();
-    }
-  };
-
-  if (isChatting) {
-    return renderChat();
   }
 
   return (
@@ -506,15 +152,26 @@ const App: React.FC = () => {
       <Box minHeight='100vh'>
         <Container maxWidth='sm'>
           <Slide in={!isChatting} direction={slideDirection}>
-            <div>{renderScreen()}</div>
+            <div>
+              <MainScreen
+                loading={loading}
+                currentScreen={currentScreen}
+                profiles={profiles}
+                currentProfileIndex={currentProfileIndex}
+                fade={fade}
+                handleSwipe={handleSwipe}
+                isButtonDisabled={isButtonDisabled}
+                likedProfiles={likedProfiles}
+                onCardClick={handleCardClick}
+              />
+            </div>
           </Slide>
-          <div>{renderFooter()}</div>
+          <Footer onNavigate={handleNavigation} />
         </Container>
       </Box>
     </ThemeProvider>
   );
 };
-
 ReactDOM.render(<App />, document.getElementById("root"));
 
 export default App;
