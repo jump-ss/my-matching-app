@@ -1,20 +1,63 @@
 // src/hooks/useChat.ts
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import type { Profile } from "../types";
 
-type Profile = {
-  id: number;
-  name: string;
-  age: number;
-  bio: string;
+type UseChat = (
+  selectedProfile: Profile,
+  selectedProfileId: number
+) => {
+  conversations: {
+    [key: number]: Array<{ sender: "me" | "them"; text: string }>;
+  };
+  handleSendMessage: (text: string) => Promise<void>;
 };
 
-export const useChat = (
-  selectedProfile: Profile | null,
-  selectedProfileId: number | null
-) => {
+export const useChat: UseChat = (selectedProfile, selectedProfileId) => {
   const [conversations, setConversations] = useState<{
     [key: number]: Array<{ sender: "me" | "them"; text: string }>;
   }>({});
+
+  useEffect(() => {
+    if (selectedProfileId !== null && !conversations[selectedProfileId]) {
+      setConversations((prevConversations) => ({
+        ...prevConversations,
+        [selectedProfileId]: [],
+      }));
+    }
+  }, [selectedProfileId, conversations]);
+
+  const handleSendMessage = async (text: string) => {
+    setConversations((prevConversations) => ({
+      ...prevConversations,
+      [selectedProfileId]: [
+        ...(prevConversations[selectedProfileId] || []),
+        {
+          sender: "me",
+          text,
+        },
+      ],
+    }));
+
+    const themText = await fetchReply(text);
+
+    setTimeout(() => {
+      setConversations((prevConversations) => ({
+        ...prevConversations,
+        [selectedProfileId]: [
+          ...(prevConversations[selectedProfileId] || []),
+          {
+            sender: "them",
+            text: themText,
+          },
+        ],
+      }));
+    }, 1000);
+  };
+
+  return {
+    conversations,
+    handleSendMessage,
+  };
 
   async function fetchReply(prompt: string) {
     const response = await fetch("http://localhost:5000/messages", {
@@ -31,30 +74,4 @@ export const useChat = (
     const responseText = await response.text();
     return responseText;
   }
-
-  const handleSendMessage = async (messageText: string) => {
-    if (messageText.trim() === "" || selectedProfileId === null) return;
-
-    setConversations((prevConversations) => {
-      const prevMessages = prevConversations[selectedProfileId] || [];
-      return {
-        ...prevConversations,
-        [selectedProfileId]: [
-          ...prevMessages,
-          { sender: "me", text: messageText },
-        ],
-      };
-    });
-
-    const reply = await fetchReply(messageText);
-    setConversations((prevConversations) => {
-      const prevMessages = prevConversations[selectedProfileId] || [];
-      return {
-        ...prevConversations,
-        [selectedProfileId]: [...prevMessages, { sender: "them", text: reply }],
-      };
-    });
-  };
-
-  return { conversations, handleSendMessage };
 };

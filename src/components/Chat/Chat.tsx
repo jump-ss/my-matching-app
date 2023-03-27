@@ -1,5 +1,5 @@
 // src/components/Chat/Chat.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Button,
   TextField,
@@ -8,10 +8,8 @@ import {
   Card,
   CardContent,
   Grid,
-  Fade,
   Box,
   CssBaseline,
-  Slide,
   CardActions,
 } from "@mui/material";
 
@@ -19,13 +17,7 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { styled } from "@mui/system";
 
 import { useChat } from "../../hooks/useChat";
-
-type Profile = {
-  id: number;
-  name: string;
-  age: number;
-  bio: string;
-};
+import type { Profile } from "../../types";
 
 type ChatProps = {
   selectedProfile: Profile;

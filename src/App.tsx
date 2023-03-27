@@ -1,19 +1,11 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
-import {
-  Button,
-  Container,
-  Typography,
-  Box,
-  CssBaseline,
-  Slide,
-} from "@mui/material";
+import { Container, Typography, Box, CssBaseline, Slide } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 
+import { MainScreen } from "./MainScreen";
 import { Footer } from "./components/Footer";
 import { Chat } from "./components/Chat";
-import { LikedProfilesScreen } from "./components/LikedProfilesScreen";
-import { SearchScreen } from "./components/SearchScreen";
 
 import { useProfiles } from "./hooks";
 import { Profile } from "./types";
@@ -60,14 +52,6 @@ const App: React.FC = () => {
 
   const { profiles, loading, fetchProfiles } = useProfiles();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      await fetchProfiles(1);
-      //setLoading(false);
-    };
-    fetchData();
-  }, []);
-
   // 選択されたプロフィールを取得
   const selectedProfile =
     likedProfiles.find((profile) => profile.id === selectedProfileId) || null;
@@ -86,6 +70,13 @@ const App: React.FC = () => {
       !likedProfiles.some((likedProfile) => likedProfile?.id === profile?.id)
   );
 
+  // App.tsx
+  useEffect(() => {
+    if (filteredProfiles.length === 1) {
+      fetchProfiles(3);
+    }
+  }, [filteredProfiles]);
+
   /**
    * 指定された方向（いいねまたはスキップ）でスワイプしたときの処理を実行します。
    * @param direction スワイプの方向（'like' または 'dislike'）
@@ -94,7 +85,7 @@ const App: React.FC = () => {
     setIsButtonDisabled(true);
     setFade(false);
     setTimeout(() => {
-      fetchProfiles(1);
+      fetchProfiles(3);
       if (direction === "like") {
         // いいねの処理
         console.log("いいね:", filteredProfiles[currentProfileIndex].name);
@@ -140,42 +131,6 @@ const App: React.FC = () => {
     setCurrentScreen(screen);
   };
 
-  const renderSearchScreen = () => {
-    return (
-      <SearchScreen
-        profiles={profiles}
-        currentProfileIndex={currentProfileIndex}
-        fade={fade}
-        handleSwipe={handleSwipe}
-        isButtonDisabled={isButtonDisabled}
-      />
-    );
-  };
-
-  const renderLikedProfilesScreen = () => {
-    return (
-      <LikedProfilesScreen
-        likedProfiles={likedProfiles}
-        onCardClick={(profileId: number) => handleCardClick(profileId)}
-      />
-    );
-  };
-
-  /**
-   *現在の画面に応じたコンテンツをレンダリングします。
-   */
-  const renderMainScreen = () => {
-    if (loading) {
-      return <Typography align='center'>ローディング中...</Typography>;
-    }
-
-    if (currentScreen === "likedProfiles") {
-      return renderLikedProfilesScreen();
-    } else {
-      return renderSearchScreen();
-    }
-  };
-
   if (isChatting && selectedProfile && selectedProfileId) {
     return (
       <Chat
@@ -197,7 +152,19 @@ const App: React.FC = () => {
       <Box minHeight='100vh'>
         <Container maxWidth='sm'>
           <Slide in={!isChatting} direction={slideDirection}>
-            <div>{renderMainScreen()}</div>
+            <div>
+              <MainScreen
+                loading={loading}
+                currentScreen={currentScreen}
+                profiles={profiles}
+                currentProfileIndex={currentProfileIndex}
+                fade={fade}
+                handleSwipe={handleSwipe}
+                isButtonDisabled={isButtonDisabled}
+                likedProfiles={likedProfiles}
+                onCardClick={handleCardClick}
+              />
+            </div>
           </Slide>
           <Footer onNavigate={handleNavigation} />
         </Container>
@@ -205,7 +172,6 @@ const App: React.FC = () => {
     </ThemeProvider>
   );
 };
-
 ReactDOM.render(<App />, document.getElementById("root"));
 
 export default App;
